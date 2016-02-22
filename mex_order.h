@@ -1,7 +1,6 @@
 #ifndef MEX_ORDER_H
 #define MEX_ORDER_H
 #include <QDateTime>
-//#include <mex_product.h>
 #include <iostream>
 
 
@@ -47,6 +46,5 @@ private:
     QString productSymbol;
 
 };
-Q_DECLARE_METATYPE(MEX_Order)
 
-#endif // MEX_ORDER_H
+#endif //MEX_ORDER_H
