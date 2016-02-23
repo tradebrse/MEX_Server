@@ -91,20 +91,32 @@ void MEX_Server::addOrder(MEX_Order order)
     }
 }
 
+bool orderMoreThan(const MEX_Order &o1, const MEX_Order &o2)
+{
+    if(o1.getOrdertype() == "BUY")
+    {
+        return o1.getValue() > o2.getValue();
+    }
+    else
+    {
+        return o1.getValue() < o2.getValue();
+    }
+}
+
 //Look for matching orders in orderbook
 bool MEX_Server::checkForMatch(MEX_Order &order)
 {
     bool match = false;
     QList<MEX_Order>::iterator i;
-
+    qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
     for( i = orderbook.begin(); i != orderbook.end() && order.getQuantity() > 0; ++i)
     {
         //Are the orders of the same product?
         if(order.getProductSymbol() ==  (*i).getProductSymbol())
         {
-            //'BID' orders have to match with 'ASK' orders
-            //Orderbook orders must be the same value or lower(new 'BID' order) / higher(new 'ASK' order)
-            if((order.getOrdertype() == "BID" && (*i).getOrdertype() == "ASK" && order.getValue() >= (*i).getValue() )|| (order.getOrdertype() == "ASK" && (*i).getOrdertype() == "BID" && order.getValue() <= (*i).getValue()))
+            //'BUY' orders have to match with 'SELL' orders
+            //Orderbook orders must be the same value or lower(new 'BUY' order) / higher(new 'SELL' order)
+            if((order.getOrdertype() == "BUY" && (*i).getOrdertype() == "SELL" && order.getValue() >= (*i).getValue() )|| (order.getOrdertype() == "SELL" && (*i).getOrdertype() == "BUY" && order.getValue() <= (*i).getValue()))
             {
                 match = true;
                 //The order quantity is less or the same as the current one from the orderbook

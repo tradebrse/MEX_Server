@@ -33,7 +33,6 @@ public:
     void setProductSymbol(QString);
 
     bool operator==(const MEX_Order &order) const;
-
 private:
 
     QString traderID;

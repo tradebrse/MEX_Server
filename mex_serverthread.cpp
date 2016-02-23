@@ -90,7 +90,7 @@ void MEX_ServerThread::disconnected()
     if(this->isRunning()){
         cout << "Thread deadlock detected, forcing termination" << endl;
         terminate(); //Thread didn't exit in time, probably deadlocked, terminate it!
-        wait(); //Note: We have to wait again here!
+        wait(5000); //Note: We have to wait again here!
     }
     exit(0);
 }
