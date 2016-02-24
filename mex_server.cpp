@@ -93,14 +93,12 @@ void MEX_Server::addOrder(MEX_Order order)
 
 bool orderMoreThan(const MEX_Order &o1, const MEX_Order &o2)
 {
-    if(o1.getOrdertype() == "BUY")
-    {
         return o1.getValue() > o2.getValue();
-    }
-    else
-    {
+}
+
+bool orderLessThan(const MEX_Order &o1, const MEX_Order &o2)
+{
         return o1.getValue() < o2.getValue();
-    }
 }
 
 //Look for matching orders in orderbook
@@ -108,7 +106,14 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
 {
     bool match = false;
     QList<MEX_Order>::iterator i;
-    qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
+    if(order.getOrdertype() == "BUY")
+    {
+    qSort(orderbook.begin(),orderbook.end(),orderLessThan);
+    }
+    else if (order.getOrdertype() == "SELL")
+    {
+qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
+    }
     for( i = orderbook.begin(); i != orderbook.end() && order.getQuantity() > 0; ++i)
     {
         //Are the orders of the same product?
