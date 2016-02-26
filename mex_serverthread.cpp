@@ -2,15 +2,22 @@
 
 using namespace std;
 
-MEX_ServerThread::MEX_ServerThread(qintptr ID, QByteArray currentOrderbookData, QObject *parent) :
+MEX_ServerThread::MEX_ServerThread(qintptr socketDescriptor, QObject *parent) :
     QThread(parent)
 {
     abort = false;
-    this->socketDescriptor = ID;
-    if(!currentOrderbookData.isNull())
-    {
-        this->currentOrderbookData = currentOrderbookData;
-    }
+    this->socketDescriptor = socketDescriptor;
+}
+
+void MEX_ServerThread::setCurrentOrderbookData(QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders)
+{
+    //Reset the old order book bytearray
+    currentOrderbookData.clear();
+    MEX_XMLProcessor *xmlProcessor = new MEX_XMLProcessor;
+    //Set pointer to order book bytearray
+    QByteArray *pointerOrderbookData = &currentOrderbookData;
+    //Write order book nad matched orders to bytearray as XML
+    currentOrderbookData = xmlProcessor->processWrite(pointerOrderbookData, orderbook, matchedOrders, socket->objectName());
 }
 
 void MEX_ServerThread::run()
@@ -31,9 +38,6 @@ void MEX_ServerThread::run()
             cout << "Some error occurred" << endl;
             return;
         }
-
-        //Write current Orderbook Data to the client so that it is up to date
-        socket->write(currentOrderbookData);
 
         //Connect socket and signal
         //Note - QT::DirectConnection is used because it's multithreaded
@@ -57,9 +61,8 @@ void MEX_ServerThread::readyRead()
     //read Data from socket
     newData = socket->readAll();
 
-    MEX_XMLProcessor* xmlProcessor = new MEX_XMLProcessor();
+    MEX_XMLProcessor *xmlProcessor = new MEX_XMLProcessor();
     connect(xmlProcessor,SIGNAL(receivedOrder(MEX_Order)),this,SLOT(receiveOrder(MEX_Order)));
-    ///Dieser Order die trader ID übergeben durch socketdescriptor oder so??....
     connect(xmlProcessor,SIGNAL(updateRequest()),this,SLOT(requestUpdate()));
 
     xmlProcessor->processRead(newData);
@@ -73,13 +76,28 @@ void MEX_ServerThread::requestUpdate()
 
 void MEX_ServerThread::receiveOrder(MEX_Order newOrder)
 {
-    //Send Data to MyServer
-    receivedOrder(newOrder);
+    if(newOrder.getQuantity() == 0)
+    {
+        this->socket->setObjectName(newOrder.getTraderID());
+        requestUpdate();
+    }
+    else
+    {
+        //Send Data to MyServer
+        receivedOrder(newOrder);
+    }
 }
 
-void MEX_ServerThread::writeData(QByteArray newData)
+void MEX_ServerThread::writeData(QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders)
 {
-    socket->write(newData);
+    //Set current values for order book and matched orders
+    setCurrentOrderbookData(orderbook, matchedOrders);
+
+    //If there is data, send it to the client
+    if(!currentOrderbookData.isNull())
+    {
+        socket->write(currentOrderbookData);
+    }
 }
 
 void MEX_ServerThread::disconnected()

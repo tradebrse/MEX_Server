@@ -14,7 +14,7 @@ public:
     explicit MEX_Server(QObject *parent = 0);
     void startServer();
 signals:
-    void broadcastData(QByteArray);
+    void broadcastData(QList<MEX_Order>, QList<MEX_Order>);
 public slots:
     void getOrder(MEX_Order newOrder);
     void requestUpdate();
@@ -27,7 +27,6 @@ protected:
 private:
     int lastOrderID;
     //'Data' variables are QByteArrays
-    QByteArray currentData;
     QList<MEX_Order> orderbook;
     bool skipMatch;
     QVarLengthArray<int> ordersToDelete;

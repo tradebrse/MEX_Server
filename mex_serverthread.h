@@ -10,7 +10,7 @@ class MEX_ServerThread : public QThread
 {
     Q_OBJECT
 public:
-    explicit MEX_ServerThread(qintptr ID, QByteArray currentData, QObject *parent = 0);
+    explicit MEX_ServerThread(qintptr ID, QObject *parent = 0);
 
     void run();
 signals:
@@ -21,11 +21,13 @@ signals:
 public slots:
     void readyRead();
     void disconnected();
-    void writeData(QByteArray newData);
+    void writeData(QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders);
     void requestUpdate();
     void receiveOrder(MEX_Order);
 
 private slots:
+
+    void setCurrentOrderbookData(QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders);
 
 private:
     QTcpSocket* socket;

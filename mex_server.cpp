@@ -7,6 +7,7 @@ MEX_Server::MEX_Server(QObject *parent) :
 {
     //Register MEX_Order so that we can use it with connect()
     qRegisterMetaType<MEX_Order>("MEX_Order");
+    qRegisterMetaType< QList<MEX_Order> >("QList<MEX_Order>");
     lastOrderID = 0;
 }
 
@@ -34,13 +35,12 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
     cout << socketDescriptor << " Connecting..." << endl;
 
     //Every new connection weill be run in a newly created thread
-    MEX_ServerThread *thread = new MEX_ServerThread(socketDescriptor, currentData);
+    MEX_ServerThread *thread = new MEX_ServerThread(socketDescriptor);
     //Seperate the thread from the current(myserver) one
     thread->moveToThread(thread);
-
     //Connect incoming Data from thread to other threads
     connect(thread,SIGNAL(receivedOrder(MEX_Order)),this,SLOT(getOrder(MEX_Order)));
-    connect(this, SIGNAL(broadcastData(QByteArray)),thread,SLOT(writeData(QByteArray)));
+    connect(this, SIGNAL(broadcastData(QList<MEX_Order>, QList<MEX_Order>)),thread,SLOT(writeData(QList<MEX_Order>, QList<MEX_Order>)));
     connect(thread, SIGNAL(updateRequest()),this,SLOT(requestUpdate()));
 
     //Once a thread is not needed, it will be deleted later
@@ -55,25 +55,16 @@ void MEX_Server::getOrder(MEX_Order newOrder)
     newOrder.setOrderID(++lastOrderID);
 
     addOrder(newOrder);
-    //Reset the old order book bytearray
-    currentData.clear();
-    MEX_XMLProcessor *xmlProcessor = new MEX_XMLProcessor;
-    //Set pointer to order book bytearray
-    QByteArray *pointerOrderbookData = &currentData;
-    //Write order book nad matched orders to bytearray as XML
-    currentData = xmlProcessor->processWrite(pointerOrderbookData, orderbook,matchedOrders);
 
-    if(!currentData.isNull())
-    {
-        emit broadcastData(currentData);
-    }
+    emit broadcastData(orderbook, matchedOrders);
+
 }
 
 void MEX_Server::requestUpdate()
 {
-    if(!currentData.isNull())
+    if(!orderbook.isEmpty())
     {
-        emit broadcastData(currentData);
+        emit broadcastData(orderbook, matchedOrders);
     }
 }
 
