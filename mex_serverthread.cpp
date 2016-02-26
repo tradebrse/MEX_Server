@@ -59,6 +59,7 @@ void MEX_ServerThread::readyRead()
 
     MEX_XMLProcessor* xmlProcessor = new MEX_XMLProcessor();
     connect(xmlProcessor,SIGNAL(receivedOrder(MEX_Order)),this,SLOT(receiveOrder(MEX_Order)));
+    ///Dieser Order die trader ID übergeben durch socketdescriptor oder so??....
     connect(xmlProcessor,SIGNAL(updateRequest()),this,SLOT(requestUpdate()));
 
     xmlProcessor->processRead(newData);
@@ -76,9 +77,9 @@ void MEX_ServerThread::receiveOrder(MEX_Order newOrder)
     receivedOrder(newOrder);
 }
 
-void MEX_ServerThread::writeData(QByteArray currentOrderbook)
+void MEX_ServerThread::writeData(QByteArray newData)
 {
-    socket->write(currentOrderbook);
+    socket->write(newData);
 }
 
 void MEX_ServerThread::disconnected()

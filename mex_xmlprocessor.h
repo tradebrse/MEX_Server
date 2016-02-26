@@ -16,7 +16,7 @@ signals:
     void updateRequest();
 public slots:
     void processRead(QByteArray data);
-    QByteArray processWrite(QByteArray *data, QList<MEX_Order> orderbook);
+    QByteArray processWrite(QByteArray *data, QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders);
 private slots:
     void readOrderElements();
 private:

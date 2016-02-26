@@ -27,10 +27,11 @@ protected:
 private:
     int lastOrderID;
     //'Data' variables are QByteArrays
-    QByteArray currentOrderbookData;
+    QByteArray currentData;
     QList<MEX_Order> orderbook;
     bool skipMatch;
     QVarLengthArray<int> ordersToDelete;
+    QList<MEX_Order> matchedOrders;
 };
 
 #endif // MEX_SERVER_H

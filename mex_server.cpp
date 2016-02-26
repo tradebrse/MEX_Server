@@ -34,7 +34,7 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
     cout << socketDescriptor << " Connecting..." << endl;
 
     //Every new connection weill be run in a newly created thread
-    MEX_ServerThread *thread = new MEX_ServerThread(socketDescriptor, currentOrderbookData);
+    MEX_ServerThread *thread = new MEX_ServerThread(socketDescriptor, currentData);
     //Seperate the thread from the current(myserver) one
     thread->moveToThread(thread);
 
@@ -55,23 +55,25 @@ void MEX_Server::getOrder(MEX_Order newOrder)
     newOrder.setOrderID(++lastOrderID);
 
     addOrder(newOrder);
-
-    currentOrderbookData.clear();
+    //Reset the old order book bytearray
+    currentData.clear();
     MEX_XMLProcessor *xmlProcessor = new MEX_XMLProcessor;
-    QByteArray *pointerOrderbookData = &currentOrderbookData;
-    currentOrderbookData = xmlProcessor->processWrite(pointerOrderbookData, orderbook);
+    //Set pointer to order book bytearray
+    QByteArray *pointerOrderbookData = &currentData;
+    //Write order book nad matched orders to bytearray as XML
+    currentData = xmlProcessor->processWrite(pointerOrderbookData, orderbook,matchedOrders);
 
-    if(!currentOrderbookData.isNull())
+    if(!currentData.isNull())
     {
-        emit broadcastData(currentOrderbookData);
+        emit broadcastData(currentData);
     }
 }
 
 void MEX_Server::requestUpdate()
 {
-    if(!currentOrderbookData.isNull())
+    if(!currentData.isNull())
     {
-        emit broadcastData(currentOrderbookData);
+        emit broadcastData(currentData);
     }
 }
 
@@ -93,12 +95,12 @@ void MEX_Server::addOrder(MEX_Order order)
 
 bool orderMoreThan(const MEX_Order &o1, const MEX_Order &o2)
 {
-        return o1.getValue() > o2.getValue();
+    return o1.getValue() > o2.getValue();
 }
 
 bool orderLessThan(const MEX_Order &o1, const MEX_Order &o2)
 {
-        return o1.getValue() < o2.getValue();
+    return o1.getValue() < o2.getValue();
 }
 
 //Look for matching orders in orderbook
@@ -108,11 +110,11 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
     QList<MEX_Order>::iterator i;
     if(order.getOrdertype() == "BUY")
     {
-    qSort(orderbook.begin(),orderbook.end(),orderLessThan);
+        qSort(orderbook.begin(),orderbook.end(),orderLessThan);
     }
     else if (order.getOrdertype() == "SELL")
     {
-qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
+        qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
     }
     for( i = orderbook.begin(); i != orderbook.end() && order.getQuantity() > 0; ++i)
     {
@@ -130,19 +132,28 @@ qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
                     int newQuantity = (*i).getQuantity() - order.getQuantity();
                     if (newQuantity == 0)
                     {
-                        const MEX_Order indexOrder = (*i);
-                        ordersToDelete.append(orderbook.indexOf(indexOrder));
+                        ordersToDelete.append(orderbook.indexOf((*i)));
+                        matchedOrders.append(MEX_Order((*i)));///quanti?
+                        matchedOrders.append(MEX_Order(order));
                         order.setQuantity(0);
                         ///Matched orders irgendwo irgendwie speichern
                     }
                     else
                     {
+                        matchedOrders.append(MEX_Order(order));
+                        MEX_Order setOrder = MEX_Order((*i));
+                        setOrder.setQuantity(order.getQuantity());
+                        matchedOrders.append(setOrder);
                         order.setQuantity(0);
                         (*i).setQuantity(newQuantity);
                     }
                 }
                 else if ( order.getQuantity() > (*i).getQuantity())
                 {
+                    matchedOrders.append(MEX_Order((*i)));
+                    MEX_Order setOrder = MEX_Order(order);
+                    setOrder.setQuantity((*i).getQuantity());
+                    matchedOrders.append(setOrder);
                     int newQuantity = order.getQuantity() - (*i).getQuantity();
                     ordersToDelete.append(orderbook.indexOf((*i)));
                     order.setQuantity(newQuantity);
@@ -165,7 +176,6 @@ qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
     {
         match = false;
     }
-
     return match;
 }
 
