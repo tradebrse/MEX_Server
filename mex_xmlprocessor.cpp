@@ -141,7 +141,8 @@ void MEX_XMLProcessor::readOrderElements()
 {
     //Declare order variables
     QString traderID, comment, productSymbol, ordertype;
-    int value, quantity;
+    double value;
+    int quantity;
 
     //Initialise order variables
     while(!xmlReader->atEnd())
@@ -156,7 +157,7 @@ void MEX_XMLProcessor::readOrderElements()
             }
             else if (xmlReader->name() == "Value")
             {
-                value = xmlReader->readElementText().toInt();
+                value = xmlReader->readElementText().toDouble();
             }
             else if (xmlReader->name() == "Quantity")
             {

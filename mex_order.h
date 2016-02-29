@@ -8,18 +8,18 @@ class MEX_Order
 {
 public:
     MEX_Order();
-    MEX_Order(QString traderID, int value, int quantity, QString comment, QString productSymbol, QString ordertype);
+    MEX_Order(QString traderID, double value, int quantity, QString comment, QString productSymbol, QString ordertype);
     MEX_Order(const MEX_Order &other);
     ~MEX_Order();
 
 
     //Initializer for XML Reader
-    void initialize(QString traderID, int value, int quantity, QString comment, QString productSymbol, QString ordertype);
+    void initialize(QString traderID, double value, int quantity, QString comment, QString productSymbol, QString ordertype);
     // Getter methods
     QString getTraderID() const;
     QString getOrdertype() const;
     int getOrderID() const;
-    int getValue() const;
+    double getValue() const;
     int getQuantity() const;
     QDateTime getTime() const;
     QString getComment() const;
@@ -27,7 +27,7 @@ public:
     //Setter methods
     void setTraderID(QString);
     void setOrderID(int);
-    void setValue(int);
+    void setValue(double);
     void setQuantity(int);
     void setComment(QString);
     void setProductSymbol(QString);
@@ -37,7 +37,7 @@ private:
 
     QString traderID;
     int orderID;
-    int value;
+    double value;
     int quantity;
     QString comment;
     QDateTime time;

@@ -4,7 +4,7 @@ MEX_Order::MEX_Order()
 {
 }
 
-MEX_Order::MEX_Order(QString traderID, int value, int quantity, QString comment, QString productSymbol, QString ordertype)
+MEX_Order::MEX_Order(QString traderID, double value, int quantity, QString comment, QString productSymbol, QString ordertype)
 {
     this->traderID = traderID;
     this->value = value;
@@ -33,7 +33,7 @@ MEX_Order::~MEX_Order()
 }
 
 //Initializer for XML Reader
-void MEX_Order::initialize(QString traderID, int value, int quantity, QString comment, QString productSymbol, QString ordertype)
+void MEX_Order::initialize(QString traderID, double value, int quantity, QString comment, QString productSymbol, QString ordertype)
 {
     this->traderID = traderID;
     this->value = value;
@@ -57,7 +57,7 @@ int MEX_Order::getOrderID() const
 {
     return this->orderID;
 }
-int MEX_Order::getValue() const
+double MEX_Order::getValue() const
 {
     return this->value;
 }
@@ -88,7 +88,7 @@ void MEX_Order::setOrderID(int orderID)
 {
     this->orderID = orderID;
 }
-void MEX_Order::setValue(int value)
+void MEX_Order::setValue(double value)
 {
     this->value = value;
 }
