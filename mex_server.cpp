@@ -26,9 +26,7 @@ void MEX_Server::startServer()
     }
 }
 
-
 //This function is called by QTcpServer when a new connection is aviable.
-
 void MEX_Server::incomingConnection(qintptr socketDescriptor)
 {
     //We have a new connection
@@ -52,12 +50,12 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
 
 void MEX_Server::getOrder(MEX_Order newOrder)
 {
+
     newOrder.setOrderID(++lastOrderID);
 
     addOrder(newOrder);
 
     emit broadcastData(orderbook, matchedOrders);
-
 }
 
 void MEX_Server::requestUpdate()
@@ -73,25 +71,29 @@ void MEX_Server::addOrder(MEX_Order order)
 {
     bool match = false;
     //Check if orderbook is not empty and did not already (partly) match
-    if (orderbook.size() > 0 && skipMatch == false)
+    if (orderbook.size() > 0)
     {
         match = checkForMatch(order);
     }
     //If there is no match for the order, then add it to the orderbook
     if(match == false)
     {
+        //Set update highlight for complete new order book order
+        order.setUpdated(7);
         orderbook.append(order);
     }
 }
 
-bool orderMoreThan(const MEX_Order &o1, const MEX_Order &o2)
-{
-    return o1.getValue() > o2.getValue();
-}
-
 bool orderLessThan(const MEX_Order &o1, const MEX_Order &o2)
 {
-    return o1.getValue() < o2.getValue();
+    if(o1.getValue() == o2.getValue())
+    {
+        return o1.getTime() < o2.getTime();
+    }
+    else
+    {
+        return o1.getValue() < o2.getValue();
+    }
 }
 
 //Look for matching orders in orderbook
@@ -105,11 +107,16 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
     }
     else if (order.getOrdertype() == "SELL")
     {
-        qSort(orderbook.begin(),orderbook.end(),orderMoreThan);
+        qSort(orderbook.begin(),orderbook.end(),orderLessThan);
+    }
+    for( i = orderbook.begin(); i != orderbook.end(); ++i)
+    {
+        //Reset all update status values to 0
+        (*i).setUpdated(0);
     }
     for( i = orderbook.begin(); i != orderbook.end() && order.getQuantity() > 0; ++i)
     {
-        //Are the orders of the same product?
+        //Are the orders of the same product type?
         if(order.getProductSymbol() ==  (*i).getProductSymbol())
         {
             //'BUY' orders have to match with 'SELL' orders
@@ -124,10 +131,9 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                     if (newQuantity == 0)
                     {
                         ordersToDelete.append(orderbook.indexOf((*i)));
-                        matchedOrders.append(MEX_Order((*i)));///quanti?
+                        matchedOrders.append(MEX_Order((*i)));
                         matchedOrders.append(MEX_Order(order));
                         order.setQuantity(0);
-                        ///Matched orders irgendwo irgendwie speichern
                     }
                     else
                     {
@@ -137,6 +143,8 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                         matchedOrders.append(setOrder);
                         order.setQuantity(0);
                         (*i).setQuantity(newQuantity);
+                        //int 3 tells to highlight quantity because of the table column nr.
+                        (*i).setUpdated(3);
                     }
                 }
                 else if ( order.getQuantity() > (*i).getQuantity())
@@ -148,6 +156,8 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                     int newQuantity = order.getQuantity() - (*i).getQuantity();
                     ordersToDelete.append(orderbook.indexOf((*i)));
                     order.setQuantity(newQuantity);
+                    //int 3 tells to highlight quantity because of the table column nr.
+                    order.setUpdated(7);
                     //Go on searching for other orders in orderbook
                 }
             }
@@ -162,10 +172,10 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
         }
         ordersToDelete.clear();
     }
-    //If parts of the original order are left, set match to false so that it is added to the orderbook
+    //If parts of the original order are left,  addto the order book
     if (match == true && order.getQuantity() > 0)
     {
-        match = false;
+        orderbook.append(order);
     }
     return match;
 }

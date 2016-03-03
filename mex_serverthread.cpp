@@ -78,6 +78,7 @@ void MEX_ServerThread::receiveOrder(MEX_Order newOrder)
 {
     if(newOrder.getQuantity() == 0)
     {
+        //Detected initial order for trader ID -> set Trader ID
         this->socket->setObjectName(newOrder.getTraderID());
         requestUpdate();
     }
@@ -97,6 +98,7 @@ void MEX_ServerThread::writeData(QList<MEX_Order> orderbook, QList<MEX_Order> ma
     if(!currentOrderbookData.isNull())
     {
         socket->write(currentOrderbookData);
+        socket->waitForBytesWritten(-1);
     }
 }
 

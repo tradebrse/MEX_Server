@@ -24,6 +24,7 @@ public:
     QDateTime getTime() const;
     QString getComment() const;
     QString getProductSymbol() const;
+    int getUpdated() const;
     //Setter methods
     void setTraderID(QString);
     void setOrderID(int);
@@ -31,6 +32,7 @@ public:
     void setQuantity(int);
     void setComment(QString);
     void setProductSymbol(QString);
+    void setUpdated(int);
 
     bool operator==(const MEX_Order &order) const;
 private:
@@ -43,6 +45,7 @@ private:
     QDateTime time;
     QString ordertype;
     QString productSymbol;
+    int updated;
 
 };
 

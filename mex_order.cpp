@@ -13,6 +13,7 @@ MEX_Order::MEX_Order(QString traderID, double value, int quantity, QString comme
     this->productSymbol = productSymbol;
     this->ordertype = ordertype;
     this->time = QDateTime::currentDateTime();
+    this->updated = 0;
 }
 
 //Copy constructor
@@ -26,6 +27,7 @@ MEX_Order::MEX_Order(const MEX_Order &other)
     this->productSymbol = other.productSymbol;
     this->ordertype = other.ordertype;
     this->time = other.time;
+    this->updated = other.updated;
 }
 
 MEX_Order::~MEX_Order()
@@ -42,6 +44,7 @@ void MEX_Order::initialize(QString traderID, double value, int quantity, QString
     this->productSymbol = productSymbol;
     this->ordertype = ordertype;
     this->time = QDateTime::currentDateTime();
+    this->updated = 0;
 }
 
 //Getter methods
@@ -79,10 +82,15 @@ QString MEX_Order::getProductSymbol() const
     return this->productSymbol;
 }
 
+int MEX_Order::getUpdated() const
+{
+    return this->updated;
+}
+
 //Setter methods
 void MEX_Order::setTraderID(QString traderID)
 {
-   this->traderID = traderID;
+    this->traderID = traderID;
 }
 void MEX_Order::setOrderID(int orderID)
 {
@@ -100,10 +108,13 @@ void MEX_Order::setComment(QString comment)
 {
     this->comment = comment;
 }
-
 void MEX_Order::setProductSymbol(QString productSymbol)
 {
     this->productSymbol = productSymbol;
+}
+void MEX_Order::setUpdated(int updated)
+{
+    this->updated = updated;
 }
 
 bool MEX_Order::operator==(const MEX_Order &order) const {

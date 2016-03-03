@@ -28,7 +28,6 @@ private:
     int lastOrderID;
     //'Data' variables are QByteArrays
     QList<MEX_Order> orderbook;
-    bool skipMatch;
     QVarLengthArray<int> ordersToDelete;
     QList<MEX_Order> matchedOrders;
 };

@@ -70,6 +70,10 @@ QByteArray MEX_XMLProcessor::processWrite(QByteArray *data, QList<MEX_Order> ord
         xmlWriter->writeStartElement("Time");
         xmlWriter->writeCharacters(order.getTime().toString("hh:mm:ss.zzz"));
         xmlWriter->writeEndElement();
+        //Write updated data
+        xmlWriter->writeStartElement("Update");
+        xmlWriter->writeCharacters(QString::number(order.getUpdated()));
+        xmlWriter->writeEndElement();
         //Close tag Order
         xmlWriter->writeEndElement();
     }
@@ -119,6 +123,10 @@ QByteArray MEX_XMLProcessor::processWrite(QByteArray *data, QList<MEX_Order> ord
             //Write time data
             xmlWriter->writeStartElement("Time");
             xmlWriter->writeCharacters(order.getTime().toString("hh:mm:ss.zzz"));
+            xmlWriter->writeEndElement();
+            //Write updated data
+            xmlWriter->writeStartElement("Update");
+            xmlWriter->writeCharacters(QString::number(order.getUpdated()));
             xmlWriter->writeEndElement();
             //Close tag Order
             xmlWriter->writeEndElement();
