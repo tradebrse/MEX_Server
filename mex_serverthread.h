@@ -5,6 +5,7 @@
 #include <QTcpSocket>
 #include <mex_xmlprocessor.h>
 #include <mex_order.h>
+#include <QElapsedTimer>
 
 class MEX_ServerThread : public QThread
 {
@@ -35,6 +36,7 @@ private:
     QByteArray currentOrderbookData;
     QByteArray newData;
     bool abort;
+    QElapsedTimer timer;
 };
 
 #endif // MEX_SERVERTHREAD_H

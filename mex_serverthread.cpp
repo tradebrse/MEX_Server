@@ -47,7 +47,7 @@ void MEX_ServerThread::run()
 
 
         //Wel'll have multiple clients, we want to know which is which
-        cout << socketDescriptor << " Client connected" << endl;
+        cout << socketDescriptor << " - " << " Client connected" << endl; //<< socket->objectName()
 
         //Make this thread a loop
         //Thread will stay alive so thjat signal/slot to function properly
@@ -58,6 +58,10 @@ void MEX_ServerThread::run()
 
 void MEX_ServerThread::readyRead()
 {
+    //For Test://
+    //Start timer signal
+    //timer.start();//
+
     //read Data from socket
     newData = socket->readAll();
 
@@ -100,11 +104,21 @@ void MEX_ServerThread::writeData(QList<MEX_Order> orderbook, QList<MEX_Order> ma
         socket->write(currentOrderbookData);
         socket->waitForBytesWritten(-1);
     }
+
+    //For Test: //
+    //End timer
+    /*
+    qint64 nanoSec;
+    nanoSec = timer.nsecsElapsed();
+    double ms;
+    ms = nanoSec/1000000;
+    cout << ms << " ms | " << nanoSec << " nanoseconds" << endl;
+    */
 }
 
 void MEX_ServerThread::disconnected()
 {
-    cout << socketDescriptor << " Disconnected" << endl;
+    cout << socketDescriptor << " - " << " Disconnected" << endl; //<< socket->objectName()
     socket->deleteLater();
     this->abort = true; //Tell the thread to abort
     sleep(5000); //wait until thread is aborted
