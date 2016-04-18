@@ -1,5 +1,7 @@
 #include "mex_server.h"
 
+static inline QByteArray IntToArray(qint32 source);
+
 using namespace std;
 
 MEX_Server::MEX_Server(QObject *parent) :
@@ -9,6 +11,18 @@ MEX_Server::MEX_Server(QObject *parent) :
     qRegisterMetaType<MEX_Order>("MEX_Order");
     qRegisterMetaType< QList<MEX_Order> >("QList<MEX_Order>");
     lastOrderID = 0;
+    perfMonSocket = new QTcpSocket(this);
+
+    perfMonSocket->connectToHost("127.0.0.1", 4444);
+
+    if(perfMonSocket->waitForConnected()){
+        cout << "Performance Monitor connected" << endl;
+    }
+    else
+    {
+        cout << "Could not connect to Performance Monitor" << endl;
+    }
+
 }
 
 
@@ -50,12 +64,27 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
 
 void MEX_Server::getOrder(MEX_Order newOrder)
 {
-
     newOrder.setOrderID(++lastOrderID);
+
+    //GetOrder//
+
+    //Write current ID and Timestamp to Performance Monitor Sockets
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TG:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
 
     addOrder(newOrder);
 
+    //Broadcast//
+
+    //Write current ID and Timestamp to Performance Monitor Socket
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TB:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+
     emit broadcastData(orderbook, matchedOrders);
+
+    //EndOfProcess//
+
+    //Write current ID and Timestamp to Performance Monitor Socket
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TE:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+
 }
 
 void MEX_Server::requestUpdate()
@@ -75,6 +104,12 @@ void MEX_Server::addOrder(MEX_Order order)
     {
         match = checkForMatch(order);
     }
+
+    //Add Order//
+
+    //Write current ID and Timestamp to Performance Monitor Socket
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TA:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+
     //If there is no match for the order, then add it to the orderbook
     if(match == false)
     {
@@ -101,6 +136,12 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
 {
     bool match = false;
     QList<MEX_Order>::iterator i;
+
+    //SortOB//
+
+    //Write current ID and Timestamp to Performance Monitor Socket
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TS:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+
     if(order.getOrdertype() == "BUY")
     {
         qSort(orderbook.begin(),orderbook.end(),orderLessThan);
@@ -114,10 +155,16 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
         //Reset all update status values to 0
         (*i).setUpdated(0);
     }
+
+    //Match//
+
+    //Write current ID and Timestamp to Performance Monitor Socket
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TM:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+
     for( i = orderbook.begin(); i != orderbook.end() && order.getQuantity() > 0; ++i)
     {
         //Are the orders of the same product type?
-        if(order.getProductSymbol() ==  (*i).getProductSymbol())
+        if(order.getProductSymbol() == (*i).getProductSymbol())
         {
             //'BUY' orders have to match with 'SELL' orders
             //Orderbook orders must be the same value or lower(new 'BUY' order) / higher(new 'SELL' order)
@@ -180,3 +227,25 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
     return match;
 }
 
+bool MEX_Server::writeToPerfMon(QString dataString)
+{
+    QByteArray data = dataString.toUtf8();
+    //Write current ID and Timestamp to Performance Monitor Socket
+    if(perfMonSocket->state() == QAbstractSocket::ConnectedState)
+    {
+        perfMonSocket->write(IntToArray(data.size())); //write size of data
+        perfMonSocket->write(data); //write the data itself
+        return perfMonSocket->waitForBytesWritten();
+    }
+    else
+        return false;
+}
+
+QByteArray IntToArray(qint32 source) //Use qint32 to ensure that the number have 4 bytes
+{
+    //Avoid use of cast, this is the Qt way to serialize objects
+    QByteArray temp;
+    QDataStream data(&temp, QIODevice::ReadWrite);
+    data << source;
+    return temp;
+}

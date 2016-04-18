@@ -6,6 +6,9 @@
 #include <mex_serverthread.h>
 #include <mex_order.h>
 #include <mex_xmlprocessor.h>
+#include <QDebug>
+#include <QTcpSocket>
+#include <QDataStream>
 
 
 class MEX_Server : public QTcpServer
@@ -25,6 +28,7 @@ public slots:
 private slots:
     bool checkForMatch(MEX_Order &order);
     void addOrder(MEX_Order order);
+    bool writeToPerfMon(QString dataString);
 
 protected:
     void incomingConnection(qintptr socketDescriptor);
@@ -35,6 +39,7 @@ private:
     QList<MEX_Order> orderbook;
     QVarLengthArray<int> ordersToDelete;
     QList<MEX_Order> matchedOrders;
+    QTcpSocket* perfMonSocket;
 };
 
 #endif // MEX_SERVER_H
