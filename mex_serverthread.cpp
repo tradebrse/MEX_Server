@@ -9,6 +9,11 @@ MEX_ServerThread::MEX_ServerThread(qintptr socketDescriptor, QObject *parent) :
     this->socketDescriptor = socketDescriptor;
 }
 
+MEX_ServerThread::~MEX_ServerThread()
+{
+delete socket;
+}
+
 void MEX_ServerThread::setCurrentOrderbookData(QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders)
 {
     //Reset the old order book bytearray
@@ -49,6 +54,7 @@ void MEX_ServerThread::run()
         //Wel'll have multiple clients, we want to know which is which
         cout << socketDescriptor << " - " << " Client connected" << endl; //<< socket->objectName()
 
+
         //Make this thread a loop
         //Thread will stay alive so thjat signal/slot to function properly
         //Not dropped out in the middle when a thread dies
@@ -64,22 +70,41 @@ void MEX_ServerThread::readyRead()
 
     //read Data from socket
     newData = socket->readAll();
+    QString data = QString(newData);
+    if(data == "SOD")
+    {
+        exchangeOpen(true);
+    }
+    else if(data == "EOD")
+    {
+        exchangeOpen(false);
+    }
+    //Cancel order from server
+    else if(data.contains("Cancel"))
+    {
+        QString id = data.mid(7);
+        emit removeOrder(id);
+    }
+    else
+    {
+        MEX_XMLProcessor *xmlProcessor = new MEX_XMLProcessor();
+        connect(xmlProcessor,SIGNAL(receivedOrder(MEX_Order)),this,SLOT(receiveOrder(MEX_Order)));
+        connect(xmlProcessor,SIGNAL(updateRequest()),this,SLOT(requestUpdate()));
 
-    MEX_XMLProcessor *xmlProcessor = new MEX_XMLProcessor();
-    connect(xmlProcessor,SIGNAL(receivedOrder(MEX_Order)),this,SLOT(receiveOrder(MEX_Order)));
-    connect(xmlProcessor,SIGNAL(updateRequest()),this,SLOT(requestUpdate()));
-
-    xmlProcessor->processRead(newData);
+        xmlProcessor->processRead(newData);
+    }
 }
 
 void MEX_ServerThread::requestUpdate()
 {
     //Send orderbook update request to server class
     emit updateRequest();
+
 }
 
 void MEX_ServerThread::receiveOrder(MEX_Order newOrder)
 {
+    //Check if Order is a update request
     if(newOrder.getQuantity() == 0)
     {
         //Detected initial order for trader ID -> set Trader ID
@@ -88,7 +113,7 @@ void MEX_ServerThread::receiveOrder(MEX_Order newOrder)
     }
     else
     {
-        //Send Data to MyServer
+        //Send Data to MEX Server
         receivedOrder(newOrder);
     }
 }
@@ -102,7 +127,7 @@ void MEX_ServerThread::writeData(QList<MEX_Order> orderbook, QList<MEX_Order> ma
     if(!currentOrderbookData.isNull())
     {
         socket->write(currentOrderbookData);
-        socket->waitForBytesWritten(-1);
+        socket->waitForBytesWritten(100);
     }
 
     //For Test: //
@@ -114,6 +139,23 @@ void MEX_ServerThread::writeData(QList<MEX_Order> orderbook, QList<MEX_Order> ma
     ms = nanoSec/1000000;
     cout << ms << " ms | " << nanoSec << " nanoseconds" << endl;
     */
+}
+
+//WriteData function for state of exchange
+void MEX_ServerThread::writeRawData(bool open)
+{
+    QByteArray sod = QString("SOD").toUtf8();
+    QByteArray eod = QString("EOD").toUtf8();
+    if(open)
+    {
+        socket->write(sod);
+         socket->waitForBytesWritten(100);
+    }
+    else
+    {
+        socket->write(eod);
+        socket->waitForBytesWritten(100);
+    }
 }
 
 void MEX_ServerThread::disconnected()
@@ -128,5 +170,6 @@ void MEX_ServerThread::disconnected()
         wait(5000); //Note: We have to wait again here!
     }
     exit(0);
+    emit disconnect();
 }
 

@@ -25,6 +25,8 @@ public:
     QString getComment() const;
     QString getProductSymbol() const;
     int getUpdated() const;
+    bool isTradable() const;
+
     //Setter methods
     void setTraderID(QString);
     void setOrderID(int);
@@ -33,6 +35,7 @@ public:
     void setComment(QString);
     void setProductSymbol(QString);
     void setUpdated(int);
+    void setTradable(bool);
 
     bool operator==(const MEX_Order &order) const;
 private:
@@ -46,7 +49,7 @@ private:
     QString ordertype;
     QString productSymbol;
     int updated;
-
+    bool tradable;
 };
 
 #endif //MEX_ORDER_H

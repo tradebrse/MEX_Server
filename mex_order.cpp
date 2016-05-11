@@ -87,6 +87,11 @@ int MEX_Order::getUpdated() const
     return this->updated;
 }
 
+bool MEX_Order::isTradable() const
+{
+    return this->tradable;
+}
+
 //Setter methods
 void MEX_Order::setTraderID(QString traderID)
 {
@@ -115,6 +120,11 @@ void MEX_Order::setProductSymbol(QString productSymbol)
 void MEX_Order::setUpdated(int updated)
 {
     this->updated = updated;
+}
+
+void MEX_Order::setTradable(bool tradable)
+{
+    this->tradable = tradable;
 }
 
 bool MEX_Order::operator==(const MEX_Order &order) const {

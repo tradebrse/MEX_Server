@@ -1,5 +1,5 @@
 #include "mex_server.h"
-
+#include "QDebug"
 static inline QByteArray IntToArray(qint32 source);
 
 using namespace std;
@@ -23,6 +23,8 @@ MEX_Server::MEX_Server(QObject *parent) :
         cout << "Could not connect to Performance Monitor" << endl;
     }
 
+    //Set tradingstatus to closed
+    open = false;
 }
 
 
@@ -40,12 +42,18 @@ void MEX_Server::startServer()
     }
 }
 
+void MEX_Server::openExchange(bool open)
+{
+    this->open = open;
+    emit broadcastRawData(open);
+}
+
+
 //This function is called by QTcpServer when a new connection is aviable.
 void MEX_Server::incomingConnection(qintptr socketDescriptor)
 {
     //We have a new connection
     cout << socketDescriptor << " Connecting..." << endl;
-
     //Every new connection weill be run in a newly created thread
     MEX_ServerThread *thread = new MEX_ServerThread(socketDescriptor);
     //Seperate the thread from the current(myserver) one
@@ -53,11 +61,17 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
     //Connect incoming Data from thread to other threads
     connect(thread,SIGNAL(receivedOrder(MEX_Order)),this,SLOT(getOrder(MEX_Order)));
     connect(this, SIGNAL(broadcastData(QList<MEX_Order>, QList<MEX_Order>)),thread,SLOT(writeData(QList<MEX_Order>, QList<MEX_Order>)));
+    connect(this, SIGNAL(broadcastRawData(bool)),thread,SLOT(writeRawData(bool)));
     connect(thread, SIGNAL(updateRequest()),this,SLOT(requestUpdate()));
+    connect(thread, SIGNAL(exchangeOpen(bool)), this, SLOT(openExchange(bool)));
+    connect(thread, SIGNAL(disconnect()), thread, SLOT(deleteLater()));
+    connect(thread, SIGNAL(removeOrder(QString)), this, SLOT(removeOrder(QString)));
 
     //Once a thread is not needed, it will be deleted later
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
 
+    //Send current exchange status to new clients
+    emit broadcastRawData(open);
     //Start the thread
     thread->start();
 }
@@ -117,6 +131,27 @@ void MEX_Server::addOrder(MEX_Order order)
         order.setUpdated(7);
         orderbook.append(order);
     }
+}
+
+void MEX_Server::removeOrder(QString id)
+{
+    //Iterate orderbook list and delete order with matching 'ID'
+    bool removed = false;
+    QList<MEX_Order>::iterator removeIterator;
+    for(removeIterator = orderbook.begin(); removeIterator != orderbook.end() && !removed; ++removeIterator)
+    {
+        if((*removeIterator).getOrderID() == id.toInt())
+        {
+           removeIterator = orderbook.erase(removeIterator);
+           removed = true;
+        }
+        //If the iterator reached end of list, set it back
+        if(removeIterator == orderbook.end())
+        {
+            removeIterator--;
+        }
+    }
+   emit broadcastData(orderbook,matchedOrders);
 }
 
 bool orderLessThan(const MEX_Order &o1, const MEX_Order &o2)
@@ -203,7 +238,7 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                     int newQuantity = order.getQuantity() - (*i).getQuantity();
                     ordersToDelete.append(orderbook.indexOf((*i)));
                     order.setQuantity(newQuantity);
-                    //int 3 tells to highlight quantity because of the table column nr.
+                    //int 7 tells to highlight all columns
                     order.setUpdated(7);
                     //Go on searching for other orders in orderbook
                 }

@@ -20,10 +20,13 @@ public:
 
 signals:
     void broadcastData(QList<MEX_Order>, QList<MEX_Order>);
+    void broadcastRawData(bool);
 
 public slots:
     void getOrder(MEX_Order newOrder);
     void requestUpdate();
+    void openExchange(bool);
+    void removeOrder(QString id);
 
 private slots:
     bool checkForMatch(MEX_Order &order);
@@ -40,6 +43,7 @@ private:
     QVarLengthArray<int> ordersToDelete;
     QList<MEX_Order> matchedOrders;
     QTcpSocket* perfMonSocket;
+    bool open;
 };
 
 #endif // MEX_SERVER_H

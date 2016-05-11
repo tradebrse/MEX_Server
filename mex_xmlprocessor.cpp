@@ -18,10 +18,6 @@ void MEX_XMLProcessor::processRead(QByteArray data)
             {
                 readOrderElements();
             }
-            else if(xmlReader->name() == "Orderbook")
-            {
-                emit updateRequest();
-            }
         }
     }
 }
