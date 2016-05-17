@@ -60,7 +60,7 @@ void MEX_Server::openExchange(bool open)
     //Delete GTD Orders if EOD
     if(!open)
     {
-        //End of Processing
+        //End of Processing 
         removeGTDOrders();
         serverDate = serverDate.addDays(1);
         emit broadcastRawData(open);

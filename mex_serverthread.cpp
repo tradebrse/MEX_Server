@@ -165,7 +165,7 @@ void MEX_ServerThread::disconnected()
     this->abort = true; //Tell the thread to abort
     sleep(5000); //wait until thread is aborted
     if(this->isRunning()){
-        cout << "Thread deadlock detected, forcing termination" << endl;
+        cout << "Thread deadlock detected, forcing termination of " << socketDescriptor << endl;
         terminate(); //Thread didn't exit in time, probably deadlocked, terminate it!
         wait(5000); //Note: We have to wait again here!
     }

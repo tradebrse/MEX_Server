@@ -1,4 +1,5 @@
 #include "mex_xmlprocessor.h"
+#include <QDebug>
 
 MEX_XMLProcessor::MEX_XMLProcessor(QObject *parent) :
     QObject(parent)
@@ -70,6 +71,10 @@ QByteArray MEX_XMLProcessor::processWrite(QByteArray *data, QList<MEX_Order> ord
         xmlWriter->writeStartElement("Update");
         xmlWriter->writeCharacters(QString::number(order.getUpdated()));
         xmlWriter->writeEndElement();
+        //Write GTD data
+        xmlWriter->writeStartElement("GTD");
+        xmlWriter->writeCharacters(order.getGTD());
+        xmlWriter->writeEndElement();
         //Close tag Order
         xmlWriter->writeEndElement();
     }
@@ -124,6 +129,10 @@ QByteArray MEX_XMLProcessor::processWrite(QByteArray *data, QList<MEX_Order> ord
             xmlWriter->writeStartElement("Update");
             xmlWriter->writeCharacters(QString::number(order.getUpdated()));
             xmlWriter->writeEndElement();
+            //Write GTD data
+            xmlWriter->writeStartElement("GTD");
+            xmlWriter->writeCharacters(order.getGTD());
+            xmlWriter->writeEndElement();
             //Close tag Order
             xmlWriter->writeEndElement();
         }
@@ -147,6 +156,7 @@ void MEX_XMLProcessor::readOrderElements()
     QString traderID, comment, productSymbol, ordertype;
     double value = 0.0;
     int quantity = 0;
+    QString gtd = "";
 
     //Initialise order variables
     while(!xmlReader->atEnd())
@@ -179,10 +189,14 @@ void MEX_XMLProcessor::readOrderElements()
             {
                 ordertype = xmlReader->readElementText();
             }
+            else if (xmlReader->name() == "GTD")
+            {
+                gtd = xmlReader->readElementText();
+            }
         }
     }
     //Create order object
     MEX_Order incomingOrder;
-    incomingOrder.initialize(traderID, value, quantity, comment, productSymbol, ordertype);
+    incomingOrder.initialize(traderID, value, quantity, comment, productSymbol, ordertype, gtd);
     emit receivedOrder(incomingOrder);
 }

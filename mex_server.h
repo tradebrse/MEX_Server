@@ -27,6 +27,7 @@ public slots:
     void requestUpdate();
     void openExchange(bool);
     void removeOrder(QString id);
+    void removeGTDOrders();
 
 private slots:
     bool checkForMatch(MEX_Order &order);
@@ -44,6 +45,7 @@ private:
     QList<MEX_Order> matchedOrders;
     QTcpSocket* perfMonSocket;
     bool open;
+    QDate serverDate;
 };
 
 #endif // MEX_SERVER_H
