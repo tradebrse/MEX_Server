@@ -51,7 +51,7 @@ void MEX_Server::openExchange(bool open)
     //Send current orderbook if SOD
     if(open)
     {
-        cout << serverDate.toString(Qt::ISODate);
+        cout << serverDate.toString(Qt::ISODate).toStdString() << endl;
 
         emit broadcastRawData(open);
         emit broadcastData(orderbook, matchedOrders);
@@ -175,14 +175,12 @@ void MEX_Server::removeOrder(QString id)
 
 void MEX_Server::removeGTDOrders()
 {
-    //Iterate orderbook list and delete order with current GTDate
-    QList<MEX_Order>::iterator removeIterator;
-    for(removeIterator = orderbook.begin(); removeIterator != orderbook.end(); ++removeIterator)
-    {
-        if((*removeIterator).getGTD() == serverDate.toString(Qt::ISODate))
-        {
-            orderbook.erase(removeIterator);
-        }
+    QList<MEX_Order>::iterator it = orderbook.begin();
+    while (it != orderbook.end()) {
+      if (QDate::fromString((*it).getGTD(),Qt::ISODate)  <= serverDate && (*it).getGTD() != "")
+        it = orderbook.erase(it);
+      else
+        ++it;
     }
 }
 
