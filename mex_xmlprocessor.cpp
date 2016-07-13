@@ -6,6 +6,12 @@ MEX_XMLProcessor::MEX_XMLProcessor(QObject *parent) :
 {
 }
 
+MEX_XMLProcessor::~MEX_XMLProcessor()
+{
+    delete xmlReader;
+    delete xmlWriter;
+}
+
 void MEX_XMLProcessor::processRead(QByteArray data)
 {
     xmlReader = new QXmlStreamReader(data);
@@ -157,6 +163,7 @@ void MEX_XMLProcessor::readOrderElements()
     double value = 0.0;
     int quantity = 0;
     QString gtd = "";
+    bool persistent = false;
 
     //Initialise order variables
     while(!xmlReader->atEnd())
@@ -193,10 +200,15 @@ void MEX_XMLProcessor::readOrderElements()
             {
                 gtd = xmlReader->readElementText();
             }
+            else if (xmlReader->name() == "Persistent")
+            {
+                if(xmlReader->readElementText() == "1") persistent = true;
+            }
         }
     }
     //Create order object
     MEX_Order incomingOrder;
-    incomingOrder.initialize(traderID, value, quantity, comment, productSymbol, ordertype, gtd);
+    incomingOrder.initialize(traderID, value, quantity, comment, productSymbol, ordertype, gtd, persistent);
+    //Send Data to Serverthread : receiveOrder
     emit receivedOrder(incomingOrder);
 }

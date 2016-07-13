@@ -30,6 +30,11 @@ MEX_Server::MEX_Server(QObject *parent) :
 }
 
 
+MEX_Server::~MEX_Server()
+{
+    delete perfMonSocket;
+}
+
 void MEX_Server::startServer()
 {
     int port = 1234;
@@ -98,6 +103,13 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
 void MEX_Server::getOrder(MEX_Order newOrder)
 {
     newOrder.setOrderID(++lastOrderID);
+
+    //Get Persistency
+    if(newOrder.isPersistent())
+    {
+        ///Add to Database...
+        qDebug() << "Persistent";
+    }
 
     //GetOrder//
 
@@ -177,10 +189,10 @@ void MEX_Server::removeGTDOrders()
 {
     QList<MEX_Order>::iterator it = orderbook.begin();
     while (it != orderbook.end()) {
-      if (QDate::fromString((*it).getGTD(),Qt::ISODate)  <= serverDate && (*it).getGTD() != "")
-        it = orderbook.erase(it);
-      else
-        ++it;
+        if (QDate::fromString((*it).getGTD(),Qt::ISODate)  <= serverDate && (*it).getGTD() != "")
+            it = orderbook.erase(it);
+        else
+            ++it;
     }
 }
 

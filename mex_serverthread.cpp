@@ -11,7 +11,7 @@ MEX_ServerThread::MEX_ServerThread(qintptr socketDescriptor, QObject *parent) :
 
 MEX_ServerThread::~MEX_ServerThread()
 {
-delete socket;
+    delete socket;
 }
 
 void MEX_ServerThread::setCurrentOrderbookData(QList<MEX_Order> orderbook, QList<MEX_Order> matchedOrders)
@@ -113,8 +113,8 @@ void MEX_ServerThread::receiveOrder(MEX_Order newOrder)
     }
     else
     {
-        //Send Data to MEX Server
-        receivedOrder(newOrder);
+        //Send Data to MEX Server : getOrder
+        emit receivedOrder(newOrder);
     }
 }
 
@@ -149,7 +149,7 @@ void MEX_ServerThread::writeRawData(bool open)
     if(open)
     {
         socket->write(sod);
-         socket->waitForBytesWritten(100);
+        socket->waitForBytesWritten(100);
     }
     else
     {

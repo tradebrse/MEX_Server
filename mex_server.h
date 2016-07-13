@@ -16,7 +16,9 @@ class MEX_Server : public QTcpServer
     Q_OBJECT
 public:
     explicit MEX_Server(QObject *parent = 0);
+    ~MEX_Server();
     void startServer();
+
 
 signals:
     void broadcastData(QList<MEX_Order>, QList<MEX_Order>);

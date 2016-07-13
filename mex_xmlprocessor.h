@@ -11,6 +11,7 @@ class MEX_XMLProcessor : public QObject
     Q_OBJECT
 public:
     explicit MEX_XMLProcessor(QObject *parent = 0);
+     ~MEX_XMLProcessor();
 signals:
     void receivedOrder(MEX_Order newOrder);
     void updateRequest();

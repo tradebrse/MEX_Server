@@ -14,7 +14,7 @@ public:
 
 
     //Initializer for XML Reader
-    void initialize(QString traderID, double value, int quantity, QString comment, QString productSymbol, QString ordertype, QString gtd);
+    void initialize(QString traderID, double value, int quantity, QString comment, QString productSymbol, QString ordertype, QString gtd, bool persistent);
     // Getter methods
     QString getTraderID() const;
     QString getOrdertype() const;
@@ -27,6 +27,7 @@ public:
     int getUpdated() const;
     bool isTradable() const;
     QString getGTD() const;
+    bool isPersistent() const;
 
     //Setter methods
     void setTraderID(QString);
@@ -38,6 +39,7 @@ public:
     void setUpdated(int);
     void setTradable(bool);
     void setGTD(QString gtd);
+    void setPersistent(bool persistent);
 
     bool operator==(const MEX_Order &order) const;
 private:
@@ -53,6 +55,7 @@ private:
     int updated;
     bool tradable;
     QString gtd;
+    bool persistent;
 };
 
 #endif //MEX_ORDER_H
