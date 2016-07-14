@@ -6,6 +6,7 @@ MEX_ServerThread::MEX_ServerThread(qintptr socketDescriptor, QObject *parent) :
     QThread(parent)
 {
     abort = false;
+    open = false;
     this->socketDescriptor = socketDescriptor;
 }
 
@@ -40,7 +41,7 @@ void MEX_ServerThread::run()
         {
             //Something's wrong, we just emit a signal
             emit error(socket->error());
-            cout << "Some error occurred" << endl;
+            cout << "Could not set socket descriptor." << endl;
             return;
         }
 
@@ -54,6 +55,8 @@ void MEX_ServerThread::run()
         //Wel'll have multiple clients, we want to know which is which
         cout << socketDescriptor << " - " << " Client connected" << endl; //<< socket->objectName()
 
+        //Set the client exchange status to the same as server
+        writeRawData(open);
 
         //Make this thread a loop
         //Thread will stay alive so thjat signal/slot to function properly
@@ -158,6 +161,13 @@ void MEX_ServerThread::writeRawData(bool open)
     }
 }
 
+//Exchange status setter
+void MEX_ServerThread::setExchangeStatus(bool open)
+{
+    this->open = open;
+}
+
+//Disconnect the client from the server
 void MEX_ServerThread::disconnected()
 {
     cout << socketDescriptor << " - " << " Disconnected" << endl; //<< socket->objectName()

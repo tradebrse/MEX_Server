@@ -30,6 +30,7 @@ public slots:
     void writeRawData(bool open);
     void requestUpdate();
     void receiveOrder(MEX_Order);
+    void setExchangeStatus(bool);
 
 private slots:
 
@@ -42,6 +43,7 @@ private:
     QByteArray newData;
     bool abort;
     QElapsedTimer timer;
+    bool open;
 };
 
 #endif // MEX_SERVERTHREAD_H

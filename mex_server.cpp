@@ -63,8 +63,9 @@ void MEX_Server::openExchange(bool open)
     }
 
     //Delete GTD Orders if EOD
-    if(!open)
+    else if(!open)
     {
+       cout << "false open" << endl;
         //End of Processing
         removeGTDOrders();
         serverDate = serverDate.addDays(1);
@@ -94,8 +95,9 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
     //Once a thread is not needed, it will be deleted later
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
 
-    //Send current exchange status to new clients
-    emit broadcastRawData(open);
+    //Set thread exchange status to the same as server
+    thread->setExchangeStatus(open);
+
     //Start the thread
     thread->start();
 }
@@ -108,7 +110,7 @@ void MEX_Server::getOrder(MEX_Order newOrder)
     if(newOrder.isPersistent())
     {
         ///Add to Database...
-        qDebug() << "Persistent";
+        cout << "Persistent";
     }
 
     //GetOrder//
