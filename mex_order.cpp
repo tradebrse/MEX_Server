@@ -17,6 +17,7 @@ MEX_Order::MEX_Order(QString traderID, double value, int quantity, QString comme
     this->updated = 0;
     this->gtd = "";
     this->persistent = false; /// Ändern zu konstrutktor wert!!
+    ////tradable hinzufügen!!!
 }
 
 //Copy constructor
@@ -114,26 +115,42 @@ void MEX_Order::setTraderID(QString traderID)
 {
     this->traderID = traderID;
 }
+
 void MEX_Order::setOrderID(int orderID)
 {
     this->orderID = orderID;
 }
+
 void MEX_Order::setValue(double value)
 {
     this->value = value;
 }
+
 void MEX_Order::setQuantity(int quantity)
 {
     this->quantity = quantity;
 }
+
 void MEX_Order::setComment(QString comment)
 {
     this->comment = comment;
 }
+
 void MEX_Order::setProductSymbol(QString productSymbol)
 {
     this->productSymbol = productSymbol;
 }
+
+void MEX_Order::setOrdertype(QString ordertype)
+{
+    this->ordertype = ordertype;
+}
+
+void MEX_Order::setTime(QDateTime time)
+{
+    this->time = time;
+}
+
 void MEX_Order::setUpdated(int updated)
 {
     this->updated = updated;

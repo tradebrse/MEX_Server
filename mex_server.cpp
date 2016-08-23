@@ -23,6 +23,11 @@ MEX_Server::MEX_Server(QObject *parent) :
         cout << "Could not connect to Performance Monitor" << endl;
     }
 
+    //Set SQL DB path
+    QString dbPath = QCoreApplication::applicationDirPath() + "/persistence.sqlite";
+    db = QSqlDatabase::addDatabase("QSQLITE", "persistence_connection");
+    db.setDatabaseName(dbPath);
+
     //Set tradingstatus to closed
     open = false;
     //Set server date
@@ -32,6 +37,7 @@ MEX_Server::MEX_Server(QObject *parent) :
 
 MEX_Server::~MEX_Server()
 {
+    closeDB();
     delete perfMonSocket;
 }
 
@@ -46,6 +52,49 @@ void MEX_Server::startServer()
     else
     {
         cout << "Listening to port " << port << "...." << endl;
+    }
+
+
+    ///Nicht sicher ob hier
+    loadPersistentOrders();
+}
+
+void MEX_Server::loadPersistentOrders()
+{
+    bool ok = false;
+    QString sqlCommand = "SELECT * FROM orders";
+    QSqlQuery query = executeQuery(sqlCommand, ok);
+    if (!ok)
+    {
+        //Error while executing SQL-Statement
+        cout << "Error - Could not load persistent orders." << endl;
+    }
+    else
+    {
+        ////WEITERARBEITen &in mex_order tradable und pers hinzufügen!
+        while(query.next())
+        {
+            MEX_Order newPersOrder;
+            newPersOrder.setOrderID(query.value(0).toInt());
+            newPersOrder.setProductSymbol(query.value(2).toString());
+            newPersOrder.setQuantity(query.value(3).toInt());
+            newPersOrder.setValue(query.value(4).toInt());
+            newPersOrder.setOrdertype(query.value(5).toString());
+            newPersOrder.setTime(QDateTime::fromString(query.value(6).toString(), "hh:mm:ss.zzz"));
+            newPersOrder.setGTD(query.value(7).toString());
+            newPersOrder.setComment(query.value(8).toString());
+            newPersOrder.setTraderID(query.value(9).toString());
+            newPersOrder.setPersistent(true);
+            newPersOrder.setUpdated(0);
+            // Persistent orders debug:
+            /*qDebug()<<"persOrders: ";
+            for(int i= 0; i < 10; i++)
+            {
+                qDebug() << i << " : " << query.value(i).toString();
+            }
+            */
+            orderbook.append(newPersOrder);
+        }
     }
 }
 
@@ -65,7 +114,6 @@ void MEX_Server::openExchange(bool open)
     //Delete GTD Orders if EOD
     else if(!open)
     {
-       cout << "false open" << endl;
         //End of Processing
         removeGTDOrders();
         serverDate = serverDate.addDays(1);
@@ -104,34 +152,53 @@ void MEX_Server::incomingConnection(qintptr socketDescriptor)
 
 void MEX_Server::getOrder(MEX_Order newOrder)
 {
-    newOrder.setOrderID(++lastOrderID);
+    //Nanosec timer start
+    timer.start();
 
-    //Get Persistency
-    if(newOrder.isPersistent())
-    {
-        ///Add to Database...
-        cout << "Persistent";
-    }
+    newOrder.setOrderID(++lastOrderID);
 
     //GetOrder//
 
     //Write current ID and Timestamp to Performance Monitor Sockets
-    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TG:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TG:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
 
-    addOrder(newOrder);
+    //Timer GetOrder restart
+    timer.restart();
+
+    //Check if order GTD date fits server date / Else no match
+    if (QDate::fromString(newOrder.getGTD(),Qt::ISODate) >= serverDate || newOrder.getGTD() == "")
+    {
+        addOrder(newOrder);
+    }
+    else
+    {
+        //Write skipped timestamps
+        //for sortOB
+        writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TS:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+        timer.restart();
+        //for checkForMatch
+        writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TM:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+        timer.restart();
+        //for addOrder
+        writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TA:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+        timer.restart();
+    }
+    /// Else return Invalid Date... ?
 
     //Broadcast//
 
     //Write current ID and Timestamp to Performance Monitor Socket
-    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TB:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TB:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+
+    //Timer Broadcast restart
+    timer.restart();
 
     emit broadcastData(orderbook, matchedOrders);
 
     //EndOfProcess//
 
     //Write current ID and Timestamp to Performance Monitor Socket
-    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TE:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
-
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TE:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
 }
 
 void MEX_Server::requestUpdate()
@@ -151,11 +218,21 @@ void MEX_Server::addOrder(MEX_Order order)
     {
         match = checkForMatch(order);
     }
+    else
+    {
+        //Write skipped timestamps
+        //for sortOB
+        writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TS:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+        timer.restart();
+        //for checkForMatch
+        writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TM:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+        timer.restart();
+    }
 
     //Add Order//
 
     //Write current ID and Timestamp to Performance Monitor Socket
-    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TA:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TA:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
 
     //If there is no match for the order, then add it to the orderbook
     if(match == false)
@@ -163,6 +240,62 @@ void MEX_Server::addOrder(MEX_Order order)
         //Set update highlight for complete new order book order
         order.setUpdated(7);
         orderbook.append(order);
+        if(order.isPersistent())
+        {
+            addPersistentOrder(order);
+        }
+    }
+}
+
+void MEX_Server::addPersistentOrder(MEX_Order newOrder)
+{
+//Get Persistency
+///only if no match...
+if(newOrder.isPersistent())
+{
+    //Add persistent order to database...
+    cout << "Persistent" << endl;
+
+    bool ok = false;
+
+    QString sqlCommand = "INSERT INTO orders (orderID, traderID, indexName, symbol, quantity, value, buysell, time, gtd, comment) SELECT '" + QString::number(newOrder.getOrderID()) + "', '" + newOrder.getTraderID() + "', indexName, '" + newOrder.getProductSymbol() + "', '" + QString::number(newOrder.getQuantity()) + "', '" + QString::number(newOrder.getValue()) + "', '" + newOrder.getOrdertype() + "', '" + newOrder.getTime().toString("hh:mm:ss.zzz") + "', '" + newOrder.getGTD() + "', '" + newOrder.getComment() + "' FROM productList WHERE symbol = '" + newOrder.getProductSymbol() + "' ";
+    executeQuery(sqlCommand, ok);
+    if (!ok)
+    {
+        //Error while executing SQL-Statement
+        cout << "Error - Could not execute query." <<  endl;
+    }
+}
+}
+void MEX_Server::removePersistentOrder(int id)
+{
+    bool ok = false;
+    QString sqlCommand = "DELETE FROM orders WHERE orderID='"+QString::number(id)+"'";
+    QSqlQuery query = executeQuery(sqlCommand, ok);
+    if (!ok)
+    {
+        //Error while executing SQL-Statement
+        cout << "Error - Could not remove persistent order." << endl;
+    }
+    else
+    {
+        ///irgendwas? oder nichts?
+    }
+}
+
+void MEX_Server::updatePersistentOrder(int id, int newQuantity)
+{
+    bool ok = false;
+    QString sqlCommand = "UPDATE orders SET quantity='"+QString::number(newQuantity)+"' WHERE orderID='"+QString::number(id)+"'";
+    QSqlQuery query = executeQuery(sqlCommand, ok);
+    if (!ok)
+    {
+        //Error while executing SQL-Statement
+        cout << "Error - Could not remove persistent order." << endl;
+    }
+    else
+    {
+        ///irgendwas? oder nichts?
     }
 }
 
@@ -176,6 +309,7 @@ void MEX_Server::removeOrder(QString id)
         if((*removeIterator).getOrderID() == id.toInt())
         {
             removeIterator = orderbook.erase(removeIterator);
+            removePersistentOrder(id.toInt());
             removed = true;
         }
         //If the iterator reached end of list, set it back
@@ -219,7 +353,10 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
     //SortOB//
 
     //Write current ID and Timestamp to Performance Monitor Socket
-    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TS:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TS:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+
+    //Timer SortOB restart
+    timer.restart();
 
     if(order.getOrdertype() == "BUY")
     {
@@ -238,7 +375,10 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
     //Match//
 
     //Write current ID and Timestamp to Performance Monitor Socket
-    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TM:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz"));
+    writeToPerfMon("ID:"+QString::number(lastOrderID)+"-TM:"+QDateTime::currentDateTime().toString("hh:mm:ss.zzz")+"-NS:"+QString::number(timer.nsecsElapsed()));
+
+    //Timer Match restart
+    timer.restart();
 
     for( i = orderbook.begin(); i != orderbook.end() && order.getQuantity() > 0; ++i)
     {
@@ -256,6 +396,11 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                     int newQuantity = (*i).getQuantity() - order.getQuantity();
                     if (newQuantity == 0)
                     {
+                        //delete pers orders from db
+                        if((*i).isPersistent())
+                        {
+                            removePersistentOrder((*i).getOrderID());
+                        }
                         ordersToDelete.append(orderbook.indexOf((*i)));
                         matchedOrders.append(MEX_Order((*i)));
                         matchedOrders.append(MEX_Order(order));
@@ -263,6 +408,10 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                     }
                     else
                     {
+                        if((*i).isPersistent())
+                        {
+                            updatePersistentOrder((*i).getOrderID(), newQuantity);
+                        }
                         matchedOrders.append(MEX_Order(order));
                         MEX_Order setOrder = MEX_Order((*i));
                         setOrder.setQuantity(order.getQuantity());
@@ -275,6 +424,11 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
                 }
                 else if ( order.getQuantity() > (*i).getQuantity())
                 {
+                    //delete pers orders from db
+                    if((*i).isPersistent())
+                    {
+                        removePersistentOrder((*i).getOrderID());
+                    }
                     matchedOrders.append(MEX_Order((*i)));
                     MEX_Order setOrder = MEX_Order(order);
                     setOrder.setQuantity((*i).getQuantity());
@@ -289,6 +443,7 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
             }
         }
     }
+
     if (match == true && ordersToDelete.length() > 0)
     {
         //Delete orders from list
@@ -302,6 +457,10 @@ bool MEX_Server::checkForMatch(MEX_Order &order)
     if (match == true && order.getQuantity() > 0)
     {
         orderbook.append(order);
+        if(order.isPersistent())
+        {
+            addPersistentOrder(order);
+        }
     }
     return match;
 }
@@ -327,4 +486,33 @@ QByteArray IntToArray(qint32 source) //Use qint32 to ensure that the number have
     QDataStream data(&temp, QIODevice::ReadWrite);
     data << source;
     return temp;
+}
+
+
+//SQL DATABASE / CONNECTION
+QSqlQuery MEX_Server::executeQuery (QString sqlCommand, bool &ok)
+{
+    if (!db.open())
+    {
+        cout << "Error - No database connection." << endl;
+        QSqlQuery emptyQuery;
+        return emptyQuery;
+    } else
+    {
+        QSqlQuery query(db);
+        ok = query.exec(sqlCommand);
+        return query;
+    }
+}
+
+void MEX_Server::closeDB()
+{
+    //Get connection name
+    QString connection;
+    connection = db.connectionName();
+    //Close connection
+    db.close();
+    db = QSqlDatabase();
+    //remove old connection
+    db.removeDatabase(connection);
 }

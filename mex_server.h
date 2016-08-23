@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QTcpSocket>
 #include <QDataStream>
+#include <QtSql>
 
 
 class MEX_Server : public QTcpServer
@@ -35,6 +36,12 @@ private slots:
     bool checkForMatch(MEX_Order &order);
     void addOrder(MEX_Order order);
     bool writeToPerfMon(QString dataString);
+    void loadPersistentOrders();
+    void addPersistentOrder(MEX_Order newOrder);
+    void removePersistentOrder(int id);
+    void updatePersistentOrder(int id, int newQuantity);
+    QSqlQuery executeQuery (QString sqlCommand, bool &ok);
+    void closeDB();
 
 protected:
     void incomingConnection(qintptr socketDescriptor);
@@ -48,6 +55,8 @@ private:
     QTcpSocket* perfMonSocket;
     bool open;
     QDate serverDate;
+    QElapsedTimer timer;
+    QSqlDatabase db;
 };
 
 #endif // MEX_SERVER_H

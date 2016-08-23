@@ -7,6 +7,7 @@
 QT       += core
 QT       += network
 QT       -= gui
+QT       += sql
 
 TARGET = MEX_Server
 CONFIG   += console
@@ -25,4 +26,5 @@ HEADERS += \
     mex_server.h \
     mex_serverthread.h \
     mex_order.h \
-    mex_xmlprocessor.h
+    mex_xmlprocessor.h \
+    mex_product.h

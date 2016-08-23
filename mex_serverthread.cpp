@@ -133,7 +133,7 @@ void MEX_ServerThread::writeData(QList<MEX_Order> orderbook, QList<MEX_Order> ma
         socket->waitForBytesWritten(100);
     }
 
-    //For Test: //
+    ///For Test: //
     //End timer
     /*
     qint64 nanoSec;
